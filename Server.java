@@ -3,22 +3,30 @@ package chatting.application;
 
 import java.awt.*;
 import javax.swing.*;
+import javax.swing.border.*;
 import java.awt.event.*;
-public class Server extends JFrame implements ActionListener{
+import java.util.*;
+import java.text.*;
+import java.net.*;
+import java.io.*;
+
+public class Server  implements ActionListener{
     
      JTextField text;
      JPanel a1;
-     Box vertical=Box.createVerticalBox();
+     static Box vertical=Box.createVerticalBox();
+     static  JFrame f=new JFrame();
+     static DataOutputStream dout;
 	
 	Server(){
 		
-		setLayout(null);
+		f.setLayout(null);
 		
 		JPanel p1=new JPanel();
 		p1.setBackground(new Color(7,94,98));
 		p1.setBounds(0,0,450,70);
 		p1.setLayout(null);
-		add(p1);
+		f.add(p1);
 		 
 		ImageIcon i1=new ImageIcon(ClassLoader.getSystemResource("icons/3.png"));
 		Image i2=i1.getImage().getScaledInstance(25, 25, Image.SCALE_DEFAULT);
@@ -79,12 +87,12 @@ public class Server extends JFrame implements ActionListener{
                 
                 a1=new JPanel();
                 a1.setBounds(5, 75, 440, 570);
-                add(a1);
+                f.add(a1);
                 
                 text=new JTextField();
                 text.setBounds(2,655,310,40);
                 text.setFont(new Font("SAN_SERIF",Font.PLAIN,16));
-                add(text);
+                f.add(text);
                 
                 JButton send=new JButton("SEND");
                 send.setBounds(320,655,123,40);
@@ -92,24 +100,25 @@ public class Server extends JFrame implements ActionListener{
                 send.setForeground(Color.WHITE);
                 send.addActionListener(this);
                 send.setFont(new Font("SAN_SERIF",Font.PLAIN,16));
-                add(send);
+                f.add(send);
                 
 		
 		
-		setSize(450,700);
-		setLocation(200,50);
-                setUndecorated(true);
-		getContentPane().setBackground(Color.WHITE);
-		setVisible(true);
+		f.setSize(450,700);
+		f.setLocation(200,50);
+                f.setUndecorated(true);
+		f.getContentPane().setBackground(Color.WHITE);
+		f.setVisible(true);
 	}
 
     
     public void actionPerformed(ActionEvent ae){
-        String out=text.getText();
+        try{
+            String out=text.getText();
         
         JLabel output=new JLabel(out);
-        JPanel p2=new JPanel();
-        p2.add(output);
+        JPanel p2=FormatLabel(out);
+        
         
         
         
@@ -121,18 +130,70 @@ public class Server extends JFrame implements ActionListener{
         vertical.add(Box.createVerticalStrut(15) );
         a1.add(vertical,BorderLayout.PAGE_START);
         
-        repaint();
-        invalidate();
-        validate();
+        dout.writeUTF(out);
         
         
+        text.setText("");
         
-            
+        f.repaint();
+        f.invalidate();
+        f.validate();
+     
+        } catch (Exception e){
+            e.printStackTrace();
         }
+        }
+    
+    public static JPanel FormatLabel(String out){
+        JPanel panel =new JPanel();
+        panel.setLayout(new BoxLayout(panel,BoxLayout.Y_AXIS));
+        JLabel output =new JLabel("<html><p style=\"width:150px\">"+out+"</p></html>");
+        output.setFont(new Font("Tohoma",Font.PLAIN,16));
+        output.setBackground(new Color(37,211,211));
+        output.setOpaque(true);
+        output.setBorder(new EmptyBorder(15,15,15,50));
+        
+        
+        panel.add(output);
+        
+        Calendar cal=Calendar.getInstance();
+        SimpleDateFormat sdf=new SimpleDateFormat("HH:mm");
+        
+        
+        JLabel time=new JLabel();
+        time.setText(sdf.format(cal.getTime()));
+        panel.add(time);
+        return panel;
+        
+        
+        
+    }
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		new Server();
+                
+                
+                try{
+                    ServerSocket skt=new ServerSocket(6001);
+                    while(true){
+                        Socket s=skt.accept();
+                        DataInputStream din=new DataInputStream(s.getInputStream());
+                        dout=new DataOutputStream(s.getOutputStream());
+                        
+                        while(true){
+                            String msg=din.readUTF();
+                            JPanel panel=FormatLabel(msg);
+                            
+                            JPanel left =new JPanel(new BorderLayout());
+                            left.add(panel,BorderLayout.LINE_START);
+                            vertical.add(left);
+                            f.validate();
+                        }
+                    }
+                }catch(Exception e){
+                    e.printStackTrace();;
+                }
 
 	}
 
